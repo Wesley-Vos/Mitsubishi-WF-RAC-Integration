@@ -9,6 +9,7 @@ from homeassistant.components.climate.const import (
 
 DOMAIN = "mitsubishi_wf_rac"
 DEVICES = "wf-rac-devices"
+NUMBER_OF_PRESET_MODES = 4
 
 CONF_OPERATOR_ID = "operator_id"
 CONF_AIRCO_ID = "airco_id"
@@ -39,6 +40,7 @@ SERVICE_SET_VERTICAL_SWING_MODE = "set_vertical_swing_mode"
 
 SUPPORT_FLAGS = (
     ClimateEntityFeature.FAN_MODE
+    | ClimateEntityFeature.PRESET_MODE
     | ClimateEntityFeature.SWING_MODE
     | ClimateEntityFeature.TARGET_TEMPERATURE
     | ClimateEntityFeature.TURN_OFF
@@ -63,20 +65,20 @@ HVAC_TRANSLATION = {
 }
 
 SWING_3D_AUTO = "3D Auto"
-SWING_VERTICAL_POSITION_1 = "Highest"
-SWING_VERTICAL_POSITION_2 = "Middle"
-SWING_VERTICAL_POSITION_3 = "Normal"
-SWING_VERTICAL_POSITION_4 = "Lowest"
-SWING_VERTICAL_AUTO = "Up/Down Auto"
+SWING_VERTICAL_POSITION_1 = "Hoog"
+SWING_VERTICAL_POSITION_2 = "Middel"
+SWING_VERTICAL_POSITION_3 = "Normaal"
+SWING_VERTICAL_POSITION_4 = "Laag"
+SWING_VERTICAL_AUTO = "Boven/ Beneden Auto"
 
-SWING_HORIZONTAL_POSITION_1 = "Left-Left"
-SWING_HORIZONTAL_POSITION_2 = "Left-Center"
+SWING_HORIZONTAL_POSITION_1 = "Links-Links"
+SWING_HORIZONTAL_POSITION_2 = "Midden-Midden"
 SWING_HORIZONTAL_POSITION_3 = "Center-Center"
-SWING_HORIZONTAL_POSITION_4 = "Center-Right"
-SWING_HORIZONTAL_POSITION_5 = "Right-Right"
-SWING_HORIZONTAL_POSITION_6 = "Left-Right"
-SWING_HORIZONTAL_POSITION_7 = "Right-Left"
-SWING_HORIZONTAL_AUTO = "Left/Right Auto"
+SWING_HORIZONTAL_POSITION_4 = "Midden-Rechts"
+SWING_HORIZONTAL_POSITION_5 = "Rechts-Rechts"
+SWING_HORIZONTAL_POSITION_6 = "Links-Rechts"
+SWING_HORIZONTAL_POSITION_7 = "Rechts-Links"
+SWING_HORIZONTAL_AUTO = "Links/Rechts Auto"
 
 
 SWING_MODE_TRANSLATION = {
@@ -119,10 +121,10 @@ SUPPORT_HORIZONTAL_SWING_MODES = [
 ]
 
 
-FAN_MODE_1 = "1 Lowest"
-FAN_MODE_2 = "2 Low"
-FAN_MODE_3 = "3 High"
-FAN_MODE_4 = "4 Highest"
+FAN_MODE_1 = "1 Laagste"
+FAN_MODE_2 = "2 Laag"
+FAN_MODE_3 = "3 Hoog"
+FAN_MODE_4 = "4 Hoogst"
 
 FAN_MODE_TRANSLATION = {
     FAN_AUTO: 0,
