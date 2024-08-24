@@ -4,10 +4,11 @@
 import logging
 from dataclasses import replace
 
-from . import MitsubishiWfRacConfigEntry
+from . import MitsubishiWfRacConfigEntry, MitsubishiWfRacData
 from homeassistant.components.climate.const import HVACMode
 from homeassistant.components.select import SelectEntity
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.restore_state import RestoreEntity
 
 from .entity import WfRacEntity
 from .wfrac.models.aircon import AirconCommands
@@ -15,8 +16,10 @@ from .wfrac.device import Device
 from .const import (
     DOMAIN,
     SWING_HORIZONTAL_MODE_TRANSLATION,
+    NUMBER_OF_PRESET_MODES,
     SUPPORT_SWING_HORIZONTAL_MODES,
     SUPPORT_SWING_MODES,
+    SUPPORTED_HVAC_MODES,
     SWING_MODE_TRANSLATION, SWING_3D_AUTO,
     FAN_MODE_TRANSLATION,
     SUPPORTED_FAN_MODES,
@@ -24,6 +27,13 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+MODE_TO_OPTIONS_MAPPING = {
+    "fan_mode": SUPPORTED_FAN_MODES,
+    "hvac_mode": SUPPORTED_HVAC_MODES,
+    "horizontal_swing_mode": SUPPORT_SWING_HORIZONTAL_MODES,
+    "vertical_swing_mode": SUPPORT_SWING_MODES,
+}
 
 # Heating uses the unit's own Heating TempSetting (10.0°C), which matches
 # HOME_LEAVE_TEMP_HEAT exactly. Cooling does not: the unit's Cooling
@@ -53,6 +63,7 @@ async def async_setup_entry(_hass, entry: MitsubishiWfRacConfigEntry, async_add_
     """Setup select entries"""
 
     device: Device = entry.runtime_data.device
+    data: MitsubishiWfRacData = entry.runtime_data
     _LOGGER.info("Setup Fan, Horizontal and Vertical Select: %s, %s", device.device_name, device.airco_id)
     if device.create_swing_mode_select:
         entities = [HorizontalSwingSelect(device), VerticalSwingSelect(device), FanSpeedSelect(device)]
@@ -70,6 +81,14 @@ async def async_setup_entry(_hass, entry: MitsubishiWfRacConfigEntry, async_add_
     if device.airco.Capabilities.home_leave_mode:
         entities.append(HomeLeaveAirFlowSelect(device, "cooling"))
         entities.append(HomeLeaveAirFlowSelect(device, "heating"))
+
+    for i in range(1, NUMBER_OF_PRESET_MODES + 1):
+        entities.extend(
+            [
+                PresetModeSelect(i, mode, data, _hass)
+                for mode in MODE_TO_OPTIONS_MAPPING
+            ]
+        )
 
     async_add_entities(entities)
 
@@ -341,4 +360,47 @@ class HomeLeaveAirFlowSelect(WfRacEntity, SelectEntity):
             heating = replace(heating, AirFlow=air_flow)
         await self._device.async_set_home_leave_mode(cooling, heating)
         self._attr_current_option = option
+        self.async_write_ha_state()
+
+
+class PresetModeSelect(SelectEntity, RestoreEntity):
+    """Preset mode selects for swing and fan speed"""
+
+    def __init__(self, i, mode, data: MitsubishiWfRacData, hass):
+        self._hass = hass
+        super().__init__()
+
+        self._data = data
+        self.i = i
+        self.mode = mode
+
+        # self.zone_variable = zone_variable
+        self._attr_name = f"{DOMAIN} preset mode { i } { mode }"
+        self._attr_unique_id = f"select_{DOMAIN}_{i}_{mode}"
+
+        # self._current_option = None
+
+        self._options = MODE_TO_OPTIONS_MAPPING[mode]
+
+    async def async_added_to_hass(self) -> None:
+        """Run when entity about to be added."""
+        await super().async_added_to_hass()
+
+        state = await self.async_get_last_state()
+        if state and state.state in self._options:
+            setattr(self._data.preset_modes[self.i], self.mode, state.state)
+
+    @property
+    def options(self) -> list[str]:
+        """Return the available options."""
+        return self._options
+
+    @property
+    def current_option(self) -> str:
+        """Return current options."""
+        return getattr(self._data.preset_modes[self.i], self.mode)
+
+    async def async_select_option(self, option: str) -> None:
+        """Select new (option)."""
+        setattr(self._data.preset_modes[self.i], self.mode, option)
         self.async_write_ha_state()

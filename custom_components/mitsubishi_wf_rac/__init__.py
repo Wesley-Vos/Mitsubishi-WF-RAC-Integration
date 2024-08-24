@@ -14,6 +14,7 @@ from homeassistant.const import (
     CONF_DEVICE_ID,
     Platform,
 )
+from homeassistant.components.climate.const import HVACMode
 
 from .const import (
     CONF_AIRCO_ID,
@@ -22,7 +23,7 @@ from .const import (
     CONF_CONNECTION_METHOD,
     CONF_FIRMWARE_UPDATE_CHECK,
     CONF_SERVICE_DATA,
-    CONF_OPERATOR_ID, CONF_CREATE_SWING_MODE_SELECT,
+    CONF_OPERATOR_ID, CONF_CREATE_SWING_MODE_SELECT, NUMBER_OF_PRESET_MODES
 )
 from .wfrac.device import AVAILABILITY_FAILURE_LIMIT_MIN, Device
 
@@ -39,13 +40,21 @@ PLATFORMS = [
     Platform.UPDATE,
 ]
 
+@dataclass
+class PresetMode: 
+    name: str
+    fan_mode: str
+    vertical_swing_mode: str
+    horizontal_swing_mode: str
+    hvac_mode: HVACMode
+    temperature: float
 
 @dataclass
 class MitsubishiWfRacData:
     """Class for storing runtime data."""
     device: Device
-
-
+    preset_modes: dict[int, PresetMode]
+    current_preset_mode: str | None
 type MitsubishiWfRacConfigEntry = ConfigEntry[MitsubishiWfRacData]
 
 
@@ -132,7 +141,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: MitsubishiWfRacConfigEnt
             "Persisted connection method [%s] for device [%s]", method, device
         )
 
-    entry.runtime_data = MitsubishiWfRacData(_device)
+    default_names = {1: "home", 2: "comfort", 3: "boost", 4: "away"}
+    preset_modes: dict[int, PresetMode] = {
+        i: PresetMode(
+            default_names[i],
+            "AUTO",
+            "LOW",
+            "LOW",
+            HVACMode.HEAT,
+            21,
+        )
+        for i in range(1, NUMBER_OF_PRESET_MODES + 1)
+    }
+
+    entry.runtime_data = MitsubishiWfRacData(_device, preset_modes, None)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(async_update_options))
 

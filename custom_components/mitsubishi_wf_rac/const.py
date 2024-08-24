@@ -70,6 +70,8 @@ CONF_TARGET_OFFSET = "target_offset"
 CONF_TARGET_OFFSET_COOL = "target_offset_cool"
 CONF_TARGET_OFFSET_HEAT = "target_offset_heat"
 
+NUMBER_OF_PRESET_MODES = 4
+
 SENSOR_TYPE_TEMPERATURE = "temperature"
 
 SENSOR_TYPES = {
@@ -98,6 +100,7 @@ SIGNAL_SET_ENERGY_TOTAL = f"{DOMAIN}_set_energy_total"
 
 SUPPORT_FLAGS = (
     ClimateEntityFeature.FAN_MODE
+    | ClimateEntityFeature.PRESET_MODE
     | ClimateEntityFeature.SWING_HORIZONTAL_MODE
     | ClimateEntityFeature.SWING_MODE
     | ClimateEntityFeature.TARGET_TEMPERATURE
