@@ -13,17 +13,30 @@ from homeassistant.const import (
     CONF_DEVICE_ID, 
     Platform,
 )
+from homeassistant.components.climate.const import HVACMode
 
-from .const import CONF_AIRCO_ID, DOMAIN, CONF_OPERATOR_ID
+from .const import CONF_AIRCO_ID, DOMAIN, CONF_OPERATOR_ID, NUMBER_OF_PRESET_MODES
 from .wfrac.device import Device
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS = [Platform.CLIMATE, Platform.SELECT, Platform.SENSOR]
+PLATFORMS = [Platform.CLIMATE, Platform.NUMBER, Platform.SELECT, Platform.SENSOR]
+
+@dataclass
+class PresetMode: 
+    name: str
+    fan_mode: str
+    vertical_swing_mode: str
+    horizontal_swing_mode: str
+    hvac_mode: HVACMode
+    temperature: float
 
 @dataclass
 class MitsubishiWfRacData:
     device: Device
+    preset_modes: dict[int, PresetMode]
+    current_preset_mode: str | None
+
 type MitsubishiWfRacConfigEntry = ConfigEntry[MitsubishiWfRacData]
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -55,7 +68,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: MitsubishiWfRacConfigEnt
     try:
         api = Device(hass, name, device, port, device_id, operator_id, airco_id)
         await api.update()  # initial update to get fresh values
-        entry.runtime_data = MitsubishiWfRacData(api)
+
+        default_names = {1: "home", 2: "comfort", 3: "boost", 4: "away"}
+        preset_modes: dict[int, PresetMode] = {
+            i: PresetMode(
+                default_names[i],
+                "AUTO",
+                "LOW",
+                "LOW",
+                HVACMode.HEAT,
+                21,
+            )
+            for i in range(1, NUMBER_OF_PRESET_MODES + 1)
+        }
+        entry.runtime_data = MitsubishiWfRacData(api, preset_modes, None)
     except Exception as ex:  # pylint: disable=broad-except
         _LOGGER.warning("Something whent wrong setting up device [%s] %s", device, ex)
 
