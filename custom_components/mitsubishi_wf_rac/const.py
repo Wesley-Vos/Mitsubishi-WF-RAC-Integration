@@ -89,6 +89,8 @@ CONF_OVERSHOOT_COOL = "overshoot_cool"
 CONF_OVERSHOOT_HEAT = "overshoot_heat"
 OVERSHOOT_MAX = 3.0
 
+NUMBER_OF_PRESET_MODES = 4
+
 SENSOR_TYPE_TEMPERATURE = "temperature"
 
 SENSOR_TYPES = {
@@ -118,6 +120,7 @@ SIGNAL_SET_ENERGY_TOTAL = f"{DOMAIN}_set_energy_total"
 
 SUPPORT_FLAGS = (
     ClimateEntityFeature.FAN_MODE
+    | ClimateEntityFeature.PRESET_MODE
     | ClimateEntityFeature.SWING_HORIZONTAL_MODE
     | ClimateEntityFeature.SWING_MODE
     | ClimateEntityFeature.TARGET_TEMPERATURE
