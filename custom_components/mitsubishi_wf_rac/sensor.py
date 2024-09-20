@@ -51,7 +51,7 @@ async def async_setup_entry(hass, entry: MitsubishiWfRacConfigEntry, async_add_e
         DiagnosticsSensor(device, "Accounts", ATTR_CONNECTED_ACCOUNTS, True),
         DiagnosticsSensor(device, "Error", CONF_ERROR),
     ]
-    if device.airco.Electric is not None:
+    if hasattr(device.airco, 'Electric') and device.airco.Electric is not None:
         entities.append(EnergySensor(device))
 
     async_add_entities(entities)
@@ -95,7 +95,7 @@ class DiagnosticsSensor(SensorEntity):
         elif self._custom_type == ATTR_CONNECTED_ACCOUNTS:
             self._attr_native_value = self._device.num_accounts
         elif self._custom_type == CONF_ERROR:
-            self._attr_native_value = self._device.airco.ErrorCode
+            self._attr_native_value = self._device.airco.ErrorCode if hasattr(self._device.airco, "ErrorCode") else None
         self._attr_available = self._device.available
 
     async def async_update(self):
@@ -124,11 +124,17 @@ class TemperatureSensor(SensorEntity):
 
     def _update_state(self) -> None:
         if self._custom_type == ATTR_INSIDE_TEMPERATURE:
-            self._attr_native_value = self._device.airco.IndoorTemp
+            if hasattr(self._device.airco, "IndoorTemp"):
+                self._attr_native_value = self._device.airco.IndoorTemp
+            self._attr_available = hasattr(self._device.airco, "IndoorTemp")
         elif self._custom_type == ATTR_OUTSIDE_TEMPERATURE:
-            self._attr_native_value = self._device.airco.OutdoorTemp
+            if hasattr(self._device.airco, "OutdoorTemp"):
+                self._attr_native_value = self._device.airco.OutdoorTemp
+            self._attr_available = hasattr(self._device.airco, "OutdoorTemp")
         elif self._custom_type == ATTR_TARGET_TEMPERATURE:
-            self._attr_native_value = self._device.airco.PresetTemp
+            if hasattr(self._device.airco, "PresetTemp"):
+                self._attr_native_value = self._device.airco.PresetTemp
+            self._attr_available = hasattr(self._device.airco, "PresetTemp")
         self._attr_available = self._device.available
 
     @Throttle(MIN_TIME_BETWEEN_UPDATES)

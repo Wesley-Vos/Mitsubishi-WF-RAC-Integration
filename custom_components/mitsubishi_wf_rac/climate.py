@@ -300,36 +300,53 @@ class AircoClimate(ClimateEntity, RestoreEntity):
         """Private update attributes"""
         airco = self._device.airco
 
-        self._attr_target_temperature = airco.PresetTemp
-        self._attr_current_temperature = airco.IndoorTemp
-        self._attr_fan_mode = list(FAN_MODE_TRANSLATION.keys())[airco.AirFlow]
-        self._attr_swing_mode = (
-            SWING_3D_AUTO
-            if airco.Entrust
-            else list(SWING_MODE_TRANSLATION.keys())[airco.WindDirectionUD]
+        self._attr_target_temperature = (
+            airco.PresetTemp if hasattr(airco, "PresetTemp") else None
         )
-        self._attr_horizontal_swing_mode = list(
-            HORIZONTAL_SWING_MODE_TRANSLATION.keys()
-        )[airco.WindDirectionLR]
+        self._attr_current_temperature = (
+            airco.IndoorTemp if hasattr(airco, "IndoorTemp") else None
+        )
+        self._attr_fan_mode = (
+            list(FAN_MODE_TRANSLATION.keys())[airco.AirFlow]
+            if hasattr(airco, "AirFlow")
+            else None
+        )
+        self._attr_swing_mode = (
+            (
+                SWING_3D_AUTO
+                if airco.Entrust
+                else list(SWING_MODE_TRANSLATION.keys())[airco.WindDirectionUD]
+            )
+            if hasattr(airco, "Entrust") and hasattr(airco, "WindDirectionUD")
+            else None
+        )
+        self._attr_horizontal_swing_mode = (
+            list(HORIZONTAL_SWING_MODE_TRANSLATION.keys())[airco.WindDirectionLR]
+            if hasattr(airco, "WindDirectionLR")
+            else None
+        )
         self._attr_available = self._device.available
-        self._attr_hvac_mode = list(HVAC_TRANSLATION.keys())[airco.OperationMode]
+        self._attr_hvac_mode = list(HVAC_TRANSLATION.keys())[airco.OperationMode] if hasattr(airco, 'OperationMode') else None
 
-        if airco.Operation is False:
-            self._attr_hvac_mode = HVACMode.OFF
+        if hasattr(airco, 'Operation'):
+            if airco.Operation is False:
+                self._attr_hvac_mode = HVACMode.OFF
+            else:
+                _new_mode: HVACMode = HVACMode.OFF
+                _mode = airco.OperationMode
+                if _mode == 0:
+                    _new_mode = HVACMode.AUTO
+                elif _mode == 1:
+                    _new_mode = HVACMode.COOL
+                elif _mode == 2:
+                    _new_mode = HVACMode.HEAT
+                elif _mode == 3:
+                    _new_mode = HVACMode.FAN_ONLY
+                elif _mode == 4:
+                    _new_mode = HVACMode.DRY
+                self._attr_hvac_mode = _new_mode
         else:
-            _new_mode: HVACMode = HVACMode.OFF
-            _mode = airco.OperationMode
-            if _mode == 0:
-                _new_mode = HVACMode.AUTO
-            elif _mode == 1:
-                _new_mode = HVACMode.COOL
-            elif _mode == 2:
-                _new_mode = HVACMode.HEAT
-            elif _mode == 3:
-                _new_mode = HVACMode.FAN_ONLY
-            elif _mode == 4:
-                _new_mode = HVACMode.DRY
-            self._attr_hvac_mode = _new_mode
+            self._attr_hvac_mode = None
 
         self.determine_preset_mode()
 

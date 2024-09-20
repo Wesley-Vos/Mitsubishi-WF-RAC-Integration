@@ -32,21 +32,23 @@ MODE_TO_OPTIONS_MAPPING = {
 }
 
 
-async def async_setup_entry(hass, entry: MitsubishiWfRacConfigEntry, async_add_entities):
+async def async_setup_entry(
+    hass, entry: MitsubishiWfRacConfigEntry, async_add_entities
+):
     """Setup select entries"""
 
     data: MitsubishiWfRacData = entry.runtime_data
-    _LOGGER.info("Setup Horizontal and Vertical Select: %s, %s", data.device.name, data.device.airco_id)
+    _LOGGER.info(
+        "Setup Horizontal and Vertical Select: %s, %s",
+        data.device.name,
+        data.device.airco_id,
+    )
     entities = [HorizontalSwingSelect(data.device), VerticalSwingSelect(data.device)]
 
     for i in range(1, NUMBER_OF_PRESET_MODES + 1):
         entities.extend(
-            [
-                PresetModeSelect(i, mode, data, hass)
-                for mode in MODE_TO_OPTIONS_MAPPING
-            ]
+            [PresetModeSelect(i, mode, data, hass) for mode in MODE_TO_OPTIONS_MAPPING]
         )
-
     async_add_entities(entities)
 
 
@@ -63,19 +65,28 @@ class HorizontalSwingSelect(SelectEntity):
         self._attr_unique_id = (
             f"{DOMAIN}-{self._device.airco_id}-horizontal-swing-direction"
         )
-        self.select_option(
-            list(HORIZONTAL_SWING_MODE_TRANSLATION.keys())[
-                self._device.airco.WindDirectionLR
-            ]
-        )
+        if hasattr(self._device.airco, "WindDirectionLR"):
+            self.select_option(
+                list(HORIZONTAL_SWING_MODE_TRANSLATION.keys())[
+                    self._device.airco.WindDirectionLR
+                ]
+            )
+            self._attr_available = self._device.available
+        else:
+            self.select_option(None)
+            self._attr_available = False
 
     def _update_state(self) -> None:
-        self.select_option(
-            list(HORIZONTAL_SWING_MODE_TRANSLATION.keys())[
-                self._device.airco.WindDirectionLR
-            ]
-        )
-        self._attr_available = self._device.available
+        if hasattr(self._device.airco, "WindDirectionLR"):
+            self.select_option(
+                list(HORIZONTAL_SWING_MODE_TRANSLATION.keys())[
+                    self._device.airco.WindDirectionLR
+                ]
+            )
+            self._attr_available = self._device.available
+        else:
+            self.select_option(None)
+            self._attr_available = False
 
     def select_option(self, option: str) -> None:
         """Change the selected option."""
@@ -92,6 +103,7 @@ class HorizontalSwingSelect(SelectEntity):
         """Retrieve latest state."""
         self._update_state()
 
+
 class VerticalSwingSelect(SelectEntity):
     """Select component to set the vertical swing direction of the airco"""
 
@@ -105,21 +117,28 @@ class VerticalSwingSelect(SelectEntity):
         self._attr_unique_id = (
             f"{DOMAIN}-{self._device.airco_id}-vertical-swing-direction"
         )
-        self.select_option(
-            list(SWING_MODE_TRANSLATION.keys())[
-                self._device.airco.WindDirectionUD
-            ]
-        )
+        if hasattr(self._device.airco, "WindDirectionUD"):
+            self.select_option(
+                list(SWING_MODE_TRANSLATION.keys())[self._device.airco.WindDirectionUD]
+            )
+            self._attr_available = self._device.available
+        else:
+            self.select_option(None)
+            self._attr_available = False
 
     def _update_state(self) -> None:
-        self.select_option(
-            SWING_3D_AUTO
-            if self._device.airco.Entrust
-            else list(SWING_MODE_TRANSLATION.keys())[
-                self._device.airco.WindDirectionUD
-            ]
-        )
-        self._attr_available = self._device.available
+        if hasattr(self._device.airco, "WindDirectionUD"):
+            self.select_option(
+                SWING_3D_AUTO
+                if self._device.airco.Entrust
+                else list(SWING_MODE_TRANSLATION.keys())[
+                    self._device.airco.WindDirectionUD
+                ]
+            )
+            self._attr_available = self._device.available
+        else:
+            self.select_option(None)
+            self._attr_available = False
 
     def select_option(self, option: str) -> None:
         """Change the selected option."""
@@ -152,6 +171,7 @@ class VerticalSwingSelect(SelectEntity):
         """Retrieve latest state."""
         self._update_state()
 
+
 class PresetModeSelect(SelectEntity, RestoreEntity):
     """Preset mode selects for swing and fan speed"""
 
@@ -167,6 +187,7 @@ class PresetModeSelect(SelectEntity, RestoreEntity):
         self._attr_name = f"{DOMAIN} preset mode { i } { mode }"
         self._attr_unique_id = f"select_{DOMAIN}_{i}_{mode}"
 
+        self._attr_available = True
         # self._current_option = None
 
         self._options = MODE_TO_OPTIONS_MAPPING[mode]
